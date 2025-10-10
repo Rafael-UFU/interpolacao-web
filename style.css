@@ -9,16 +9,49 @@ body {
     padding: 20px;
 }
 
-h1 {
+h1, h3 {
     color: #444;
+    text-align: center;
 }
 
-.controls {
-    margin-bottom: 20px;
+p {
+    text-align: center;
+}
+
+.main-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    width: 100%;
+    max-width: 1400px;
+    justify-content: center;
+}
+
+.canvas-container {
+    flex: 3; /* O canvas ocupa mais espaço */
+    min-width: 400px;
+}
+
+.controls-container {
+    flex: 1; /* Os controles ocupam menos espaço */
+    min-width: 300px;
     background-color: #fff;
-    padding: 15px;
+    padding: 20px;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    align-self: flex-start; /* Alinha no topo */
+}
+
+.control-group {
+    margin-bottom: 20px;
+}
+
+.color-controls label {
+    margin-right: 5px;
+}
+
+.color-controls input[type="color"] {
+    margin-right: 15px;
 }
 
 button {
@@ -28,40 +61,65 @@ button {
     color: white;
     border-radius: 5px;
     cursor: pointer;
-    margin-left: 10px;
+    margin: 5px;
+    transition: background-color 0.2s;
 }
 
 button:hover {
     background-color: #0056b3;
 }
 
+button.active {
+    background-color: #28a745;
+}
+
+button.active:hover {
+    background-color: #218838;
+}
+
+
 canvas {
     border: 2px solid #ccc;
     background-color: #fff;
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     cursor: crosshair;
-    max-width: 100%; /* Garante que o canvas seja responsivo */
-    max-height: 80vh;
+    max-width: 100%;
+    height: auto;
 }
 
-.legend {
-    margin-top: 20px;
-    background-color: #fff;
-    padding: 10px;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.legend-item {
-    display: inline-flex;
-    align-items: center;
-    margin: 0 15px;
-}
-
-.color-box {
-    width: 20px;
-    height: 20px;
+#pointsTableContainer {
+    max-height: 200px;
+    overflow-y: auto;
     border: 1px solid #ccc;
-    margin-right: 8px;
-    display: inline-block;
+    margin-bottom: 10px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: center;
+}
+
+th {
+    background-color: #f2f2f2;
+}
+
+footer {
+    margin-top: 40px;
+    padding: 20px;
+    width: 100%;
+    max-width: 1400px;
+    background-color: #333;
+    color: #fff;
+    text-align: center;
+    border-radius: 8px;
+}
+
+footer p {
+    margin: 5px 0;
 }
