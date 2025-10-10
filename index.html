@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Visualizador de Interpolação Polinomial</title>
+    <title>Ferramenta Didática de Interpolação</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
@@ -11,44 +11,78 @@
 </head>
 <body>
     <header>
-        <h1>Visualizador de Interpolação Polinomial</h1>
-        <p class="subtitle">Faça o upload de uma imagem e clique para adicionar os nós de interpolação.</p>
+        <h1>Ferramenta Didática de Interpolação de Curvas</h1>
+        <p class="subtitle">Use uma imagem como plano de fundo, defina um sistema de coordenadas e explore a interpolação.</p>
     </header>
     
     <div class="main-container">
         <div class="canvas-container">
             <canvas id="imageCanvas"></canvas>
+            <div id="calibration-overlay" class="hidden">
+                <p id="calibration-text"></p>
+            </div>
         </div>
-        
+
         <div class="controls-container">
-            <h3>Controles</h3>
-            <div class="control-group file-input-group">
+            <h3>Controles Gerais</h3>
+            <div class="control-group">
                 <label for="imageLoader">Selecione uma imagem:</label>
                 <input type="file" id="imageLoader" name="imageLoader" accept="image/*">
             </div>
-
             <div class="control-group">
-                <button id="resetButton">Limpar Pontos</button>
+                <button id="resetButton">Limpar Tudo</button>
                 <button id="downloadImageButton">Baixar Imagem</button>
             </div>
 
-            <h3>Cores</h3>
-            <div class="control-group color-controls">
-                <label for="polyColor">Polinomial:</label>
-                <input type="color" id="polyColor" value="#28a745"> <label for="splineColor">Spline:</label>
-                <input type="color" id="splineColor" value="#007bff">
-                
-                <label for="pointsColor">Pontos:</label>
-                <input type="color" id="pointsColor" value="#ffc107">
+            <h3>Sistema de Coordenadas</h3>
+            <div class="control-group">
+                <button id="coordModeButton">Modo: Manual</button>
+                <div id="manual-coords">
+                    <div class="coord-inputs">
+                        <label>X:</label> <input type="number" id="xMin" value="0"> a <input type="number" id="xMax" value="10">
+                    </div>
+                    <div class="coord-inputs">
+                        <label>Y:</label> <input type="number" id="yMin" value="0"> a <input type="number" id="yMax" value="10">
+                    </div>
+                </div>
+                 <div id="interactive-coords" class="hidden">
+                    <p>Defina a escala do eixo X para calibração:</p>
+                    <label>Valor do Ponto de Calibração X:</label>
+                    <input type="number" id="calibXValue" value="10">
+                </div>
             </div>
 
-            <h3>Visualização</h3>
+            <h3>Grade</h3>
             <div class="control-group">
+                <button id="toggleGridButton" class="toggle-btn active">Grade Visível</button>
+                <div class="grid-controls">
+                    <label for="gridColor">Cor:</label>
+                    <input type="color" id="gridColor" value="#cccccc">
+                    <label for="gridThickness">Espessura:</label>
+                    <input type="range" id="gridThickness" min="0.5" max="5" step="0.5" value="1">
+                </div>
+            </div>
+
+            <h3>Estilo do Desenho</h3>
+            <div class="control-group style-controls">
+                <div>
+                    <label for="pointsSize">Tamanho dos Pontos:</label>
+                    <input type="range" id="pointsSize" min="2" max="20" step="1" value="5">
+                </div>
+                <div>
+                    <label for="linesThickness">Espessura das Linhas:</label>
+                    <input type="range" id="linesThickness" min="1" max="10" step="0.5" value="3">
+                </div>
+                <div class="color-controls">
+                    <label for="polyColor">Polinomial:</label> <input type="color" id="polyColor" value="#28a745">
+                    <label for="splineColor">Spline:</label> <input type="color" id="splineColor" value="#007bff">
+                    <label for="pointsColor">Pontos:</label> <input type="color" id="pointsColor" value="#ffc107">
+                </div>
                 <button id="togglePolyButton" class="toggle-btn active">Polinomial Visível</button>
                 <button id="toggleSplineButton" class="toggle-btn active">Spline Visível</button>
             </div>
             
-            <h3>Nós de Interpolação (Normalizados)</h3>
+            <h3>Nós de Interpolação</h3>
             <div id="pointsTableContainer">
                  <p>Nenhum ponto adicionado.</p>
             </div>
@@ -62,7 +96,7 @@
             <p><strong>Aluno de Mestrado:</strong> Antônio Marcos da Silva Leite</p>
             <p><strong>Professor Orientador:</strong> Prof. Dr. Rafael Figueiredo</p>
             <p><strong>Programa:</strong> Mestrado Profissional em Matemática em Rede Nacional (PROFMAT)</p>
-            <p><strong>Instituição:</strong> Universidade Federal de Uberlândia (UFU) - Instituto de Matemática e Estatística (IME)</p>
+            <p><strong>Instituição:</strong> Universidade Federal de Uberlândia (UFU) - Instituto de Matemática e Estátistica (IME)</p>
         </div>
     </footer>
 
