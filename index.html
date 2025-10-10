@@ -10,18 +10,52 @@
     <h1>Visualizador de Interpolação Polinomial</h1>
     <p>Faça o upload de uma imagem e clique nela para adicionar pontos (nós de interpolação).</p>
     
-    <div class="controls">
-        <label for="imageLoader">Selecione uma imagem:</label>
-        <input type="file" id="imageLoader" name="imageLoader" accept="image/*">
-        <button id="resetButton">Limpar Pontos</button>
+    <div class="main-container">
+        <div class="canvas-container">
+            <canvas id="imageCanvas"></canvas>
+        </div>
+        
+        <div class="controls-container">
+            <h3>Controles</h3>
+            <div class="control-group">
+                <label for="imageLoader">Selecione uma imagem:</label>
+                <input type="file" id="imageLoader" name="imageLoader" accept="image/*">
+            </div>
+
+            <div class="control-group">
+                <button id="resetButton">Limpar Pontos</button>
+                <button id="downloadImageButton">Baixar Imagem</button>
+            </div>
+
+            <h3>Cores</h3>
+            <div class="control-group color-controls">
+                <label for="polyColor">Polinomial:</label>
+                <input type="color" id="polyColor" value="#008000"> <label for="splineColor">Spline:</label>
+                <input type="color" id="splineColor" value="#0000ff">
+                
+                <label for="pointsColor">Pontos:</label>
+                <input type="color" id="pointsColor" value="#ffff00">
+            </div>
+
+            <h3>Visualização</h3>
+            <div class="control-group">
+                <button id="togglePolyButton" class="active">Ocultar Polinomial</button>
+                <button id="toggleSplineButton" class="active">Ocultar Spline</button>
+            </div>
+            
+            <h3>Nós de Interpolação</h3>
+            <div id="pointsTableContainer">
+                 </div>
+            <button id="downloadCsvButton">Baixar Dados (.csv)</button>
+        </div>
     </div>
 
-    <canvas id="imageCanvas"></canvas>
-
-    <div class="legend">
-        <span class="legend-item"><span class="color-box" style="background-color: #ff0000;"></span> Interpolação Polinomial Padrão</span>
-        <span class="legend-item"><span class="color-box" style="background-color: #0000ff;"></span> Spline Cúbica</span>
-    </div>
+    <footer>
+        <p><strong>Projeto de Mestrado - PROFMAT</strong></p>
+        <p><strong>Aluno:</strong> Antônio Marcos da Silva Leite</p>
+        <p><strong>Orientador:</strong> Prof. Dr. Rafael Figueiredo</p>
+        <p><strong>Instituição:</strong> Universidade Federal de Uberlândia (UFU) - Instituto de Matemática e Estatística (IME)</p>
+    </footer>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.7.0/math.min.js"></script>
     <script src="script.js"></script>
