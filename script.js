@@ -6,6 +6,7 @@ window.onload = () => {
     const downloadCsvButton = document.getElementById('downloadCsvButton');
     const canvas = document.getElementById('imageCanvas');
     const ctx = canvas.getContext('2d');
+    const pointsTableContainer = document.getElementById('pointsTableContainer');
 
     // Controles de Estilo
     const pointsSizeSlider = document.getElementById('pointsSize');
@@ -33,8 +34,6 @@ window.onload = () => {
     const calibrationOverlay = document.getElementById('calibration-overlay');
     const calibrationText = document.getElementById('calibration-text');
 
-    const pointsTableContainer = document.getElementById('pointsTableContainer');
-
     // --- ESTADO DA APLICAÇÃO ---
     let backgroundImage = null;
     let points = []; // Array para armazenar { pixel: {x, y}, custom: {x, y} }
@@ -43,8 +42,8 @@ window.onload = () => {
     let showGrid = true;
     let coordMode = 'manual'; // 'manual' ou 'interactive'
     let calibrationStep = 'done'; // 'origin', 'xAxis', 'done'
-    let calibOriginPixel = null; // Pixel da origem na calibração
-    let calibXAxisPixel = null; // Pixel do eixo X na calibração
+    let calibOriginPixel = null;
+    let calibXAxisPixel = null;
 
     // --- MANIPULADORES DE EVENTOS ---
 
@@ -62,12 +61,17 @@ window.onload = () => {
         reader.readAsDataURL(e.target.files[0]);
     });
 
+    // CORREÇÃO 1: Adicionar o listener de clique tanto no canvas quanto na camada de sobreposição
     canvas.addEventListener('click', handleCanvasClick);
+    calibrationOverlay.addEventListener('click', handleCanvasClick);
 
-    // Eventos de mudança nos controles redesenham o canvas
+    // Eventos de mudança nos controles
     [pointsSizeSlider, linesThicknessSlider, polyColorInput, splineColorInput, pointsColorInput,
      gridColorInput, gridThicknessSlider, xMinInput, xMaxInput, yMinInput, yMaxInput].forEach(input => {
-        input.addEventListener('input', redrawCanvas);
+        input.addEventListener('input', () => {
+            recalculateAllCustomCoords();
+            redrawCanvas();
+        });
     });
 
     resetButton.addEventListener('click', reset);
@@ -102,7 +106,7 @@ window.onload = () => {
     function toggleCoordMode() {
         if (coordMode === 'manual') {
             coordMode = 'interactive';
-            coordModeButton.textContent = 'Modo: Interativo (Calibrar)';
+            coordModeButton.textContent = 'Iniciar Calibração';
             manualCoordsDiv.classList.add('hidden');
             interactiveCoordsDiv.classList.remove('hidden');
             startCalibration();
@@ -113,30 +117,28 @@ window.onload = () => {
             interactiveCoordsDiv.classList.add('hidden');
             endCalibration();
         }
-        recalculateAllCustomCoords(); // Recalcula os pontos existentes com o novo sistema
-        redrawCanvas();
     }
 
     function startCalibration() {
         calibrationStep = 'origin';
-        calibrationOverlay.classList.remove('hidden');
         calibrationOverlay.classList.add('active');
         calibrationText.textContent = 'Clique na imagem para definir a ORIGEM (0, 0) do seu sistema.';
-        points = []; // Limpa os pontos ao iniciar uma nova calibração
+        points = []; // Limpa os pontos
+        calibOriginPixel = null;
+        calibXAxisPixel = null;
         updatePointsTable();
+        redrawCanvas();
     }
 
     function endCalibration() {
         calibrationStep = 'done';
-        calibrationOverlay.classList.add('hidden');
         calibrationOverlay.classList.remove('active');
+        recalculateAllCustomCoords();
+        redrawCanvas();
     }
 
     function handleCanvasClick(e) {
-        if (!backgroundImage) {
-            alert("Por favor, carregue uma imagem primeiro.");
-            return;
-        }
+        if (!backgroundImage) return;
 
         const rect = canvas.getBoundingClientRect();
         const scaleX = canvas.width / rect.width;
@@ -155,7 +157,7 @@ window.onload = () => {
                 calibXAxisPixel = pixelCoords;
                 endCalibration();
             }
-            redrawCanvas(); // Desenha os pontos de calibração
+            redrawCanvas();
         } else {
             const customCoords = pixelToCustom(pixelCoords);
             points.push({ pixel: pixelCoords, custom: customCoords });
@@ -164,8 +166,7 @@ window.onload = () => {
             updatePointsTable();
         }
     }
-
-    // Funções de Mapeamento de Coordenadas
+    
     function pixelToCustom(pixelCoords) {
         if (coordMode === 'manual') {
             const xMin = parseFloat(xMinInput.value) || 0;
@@ -174,24 +175,24 @@ window.onload = () => {
             const yMax = parseFloat(yMaxInput.value) || 10;
             
             const customX = xMin + (pixelCoords.x / canvas.width) * (xMax - xMin);
-            const customY = yMin + ((canvas.height - pixelCoords.y) / canvas.height) * (yMax - yMin); // Y invertido
+            const customY = yMin + ((canvas.height - pixelCoords.y) / canvas.height) * (yMax - yMin);
             return { x: customX, y: customY };
         } else { // interactive
             if (!calibOriginPixel || !calibXAxisPixel) return { x: NaN, y: NaN };
             
             const pixelDistX = calibXAxisPixel.x - calibOriginPixel.x;
+            if (Math.abs(pixelDistX) < 1) return { x: NaN, y: NaN }; // Evita divisão por zero
+            
             const scale = parseFloat(calibXValueInput.value) / pixelDistX;
             
             const customX = (pixelCoords.x - calibOriginPixel.x) * scale;
-            const customY = (calibOriginPixel.y - pixelCoords.y) * scale; // Y invertido
+            const customY = (calibOriginPixel.y - pixelCoords.y) * scale;
             return { x: customX, y: customY };
         }
     }
 
     function recalculateAllCustomCoords() {
-        points.forEach(p => {
-            p.custom = pixelToCustom(p.pixel);
-        });
+        points.forEach(p => { p.custom = pixelToCustom(p.pixel); });
         updatePointsTable();
     }
 
@@ -199,11 +200,11 @@ window.onload = () => {
 
     function reset() {
         points = [];
-        calibOriginPixel = null;
-        calibXAxisPixel = null;
-        if (coordMode === 'interactive') {
-            startCalibration();
-        }
+        coordMode = 'manual';
+        coordModeButton.textContent = 'Modo: Manual';
+        manualCoordsDiv.classList.remove('hidden');
+        interactiveCoordsDiv.classList.add('hidden');
+        endCalibration();
         redrawCanvas();
         updatePointsTable();
     }
@@ -213,43 +214,157 @@ window.onload = () => {
         if (backgroundImage) ctx.drawImage(backgroundImage, 0, 0);
         if (showGrid) drawGrid();
 
-        // Desenha os pontos de calibração se estiverem definidos
         if (calibOriginPixel) drawCalibrationPoint(calibOriginPixel, 'O');
         if (calibXAxisPixel) drawCalibrationPoint(calibXAxisPixel, 'X');
 
-        const pixelPoints = points.map(p => p.pixel);
-        if (pixelPoints.length > 1) {
-            if (showPolynomial) drawPolynomialInterpolation(pixelPoints);
-            if (showSpline) drawCubicSplineInterpolation(pixelPoints);
+        // CORREÇÃO 2: Garante que os pontos e curvas sejam baseados nos dados corretos
+        const customPoints = points.map(p => p.custom);
+        if (customPoints.length > 1) {
+            if (showPolynomial) drawPolynomialInterpolation(customPoints);
+            if (showSpline) drawCubicSplineInterpolation(customPoints);
         }
-        points.forEach(p => drawPoint(p.pixel)); // Desenha os pontos por último para ficarem no topo
-        
-        // Atualiza a tabela com o sistema de coordenadas atual
-        recalculateAllCustomCoords();
+        points.forEach(p => drawPoint(p.pixel));
+    }
+
+    function customToPixel(customCoords) {
+        if (coordMode === 'manual') {
+            const xMin = parseFloat(xMinInput.value) || 0;
+            const xMax = parseFloat(xMaxInput.value) || 10;
+            const yMin = parseFloat(yMinInput.value) || 0;
+            const yMax = parseFloat(yMaxInput.value) || 10;
+            if (xMax === xMin || yMax === yMin) return { x: 0, y: 0 };
+
+            const px = ((customCoords.x - xMin) / (xMax - xMin)) * canvas.width;
+            const py = canvas.height - (((customCoords.y - yMin) / (yMax - yMin)) * canvas.height);
+            return { x: px, y: py };
+        } else {
+            if (!calibOriginPixel || !calibXAxisPixel) return { x: 0, y: 0 };
+            const pixelDistX = calibXAxisPixel.x - calibOriginPixel.x;
+            if (Math.abs(pixelDistX) < 1) return { x: 0, y: 0 };
+            const scale = parseFloat(calibXValueInput.value) / pixelDistX;
+
+            const px = (customCoords.x / scale) + calibOriginPixel.x;
+            const py = calibOriginPixel.y - (customCoords.y / scale);
+            return { x: px, y: py };
+        }
     }
     
+    function drawGrid() { /* ...código da versão anterior... */ }
+    function drawPoint(pixelPoint) { /* ...código da versão anterior... */ }
+    function drawCalibrationPoint(pixelPoint, label) { /* ...código da versão anterior... */ }
+    function drawCurve(curvePointsInCustom, color) {
+        if (curvePointsInCustom.length < 2) return;
+        const curvePointsInPixels = curvePointsInCustom.map(customToPixel);
+        
+        ctx.beginPath();
+        ctx.moveTo(curvePointsInPixels[0].x, curvePointsInPixels[0].y);
+        for (let i = 1; i < curvePointsInPixels.length; i++) {
+            ctx.lineTo(curvePointsInPixels[i].x, curvePointsInPixels[i].y);
+        }
+        ctx.strokeStyle = color;
+        ctx.lineWidth = parseFloat(linesThicknessSlider.value);
+        ctx.stroke();
+    }
+    
+    function updatePointsTable() { /* ...código da versão anterior... */ }
+    function downloadImage() { /* ...código da versão anterior... */ }
+    
+    // CORREÇÃO 2: Funções de interpolação restauradas e adaptadas
+    function drawPolynomialInterpolation(customPoints) {
+        const polyPoints = getPolynomialPoints(customPoints);
+        if(polyPoints.length > 0) drawCurve(polyPoints, polyColorInput.value);
+    }
+    function drawCubicSplineInterpolation(customPoints) {
+        const splinePoints = getSplinePoints(customPoints);
+        if(splinePoints.length > 0) drawCurve(splinePoints, splineColorInput.value);
+    }
+
+    function getPolynomialPoints(customPoints) {
+        const n = customPoints.length;
+        if (n < 2) return [];
+
+        const A = [], b = [];
+        for (let i = 0; i < n; i++) {
+            const row = [];
+            for (let j = 0; j < n; j++) row.push(Math.pow(customPoints[i].x, j));
+            A.push(row);
+            b.push(customPoints[i].y);
+        }
+        
+        try {
+            const coeffs = math.lusolve(A, b).map(val => val[0]);
+            const curvePoints = [];
+            const xStart = customPoints[0].x;
+            const xEnd = customPoints[n - 1].x;
+            const steps = canvas.width; // Boa resolução para a curva
+            for (let i = 0; i <= steps; i++) {
+                const x = xStart + (i/steps) * (xEnd - xStart);
+                let y = 0;
+                for (let j = 0; j < n; j++) y += coeffs[j] * Math.pow(x, j);
+                curvePoints.push({ x, y });
+            }
+            return curvePoints;
+        } catch (error) {
+            console.error("Erro ao calcular a interpolação polinomial:", error);
+            return [];
+        }
+    }
+    
+    function getSplinePoints(customPoints) {
+        const n = customPoints.length;
+        if (n < 2) return [];
+        if (n === 2) return [...customPoints];
+        
+        const x = customPoints.map(p => p.x), y = customPoints.map(p => p.y);
+        const h = []; for (let i = 0; i < n - 1; i++) h[i] = x[i + 1] - x[i];
+        if (h.some(val => val <= 0)) { // Pontos com mesmo X não funcionam
+            return [];
+        }
+        const alpha = []; for (let i = 1; i < n - 1; i++) alpha[i] = (3 / h[i]) * (y[i + 1] - y[i]) - (3 / h[i - 1]) * (y[i] - y[i - 1]);
+        const l = [1], mu = [0], z = [0];
+        for (let i = 1; i < n - 1; i++) {
+            l[i] = 2 * (x[i + 1] - x[i - 1]) - h[i - 1] * mu[i - 1];
+            mu[i] = h[i] / l[i];
+            z[i] = (alpha[i] - h[i - 1] * z[i - 1]) / l[i];
+        }
+        l[n - 1] = 1; z[n - 1] = 0;
+        const c = []; c[n - 1] = 0;
+        const b = [], d = [];
+        for (let j = n - 2; j >= 0; j--) {
+            c[j] = z[j] - mu[j] * c[j + 1];
+            b[j] = (y[j + 1] - y[j]) / h[j] - (h[j] * (c[j + 1] + 2 * c[j])) / 3;
+            d[j] = (c[j + 1] - c[j]) / (3 * h[j]);
+        }
+        const curvePoints = [];
+        const stepsPerSegment = 100;
+        for (let i = 0; i < n - 1; i++) {
+            for (let step = 0; step < stepsPerSegment; step++) {
+                const xi = x[i] + (step/stepsPerSegment) * h[i];
+                const dx = xi - x[i];
+                const yi = y[i] + b[i] * dx + c[i] * dx * dx + d[i] * dx * dx * dx;
+                curvePoints.push({ x: xi, y: yi });
+            }
+        }
+        curvePoints.push(customPoints[n - 1]);
+        return curvePoints;
+    }
+
+    function downloadCSV() { /* ...código anterior, que já usava dados custom... */ }
+    
+    // As funções que faltavam e não foram alteradas
     function drawGrid() {
-        const numLines = 10; // Desenha 10 linhas principais
         ctx.beginPath();
         ctx.strokeStyle = gridColorInput.value;
         ctx.lineWidth = parseFloat(gridThicknessSlider.value);
 
-        const xMin = parseFloat(xMinInput.value) || 0;
-        const xMax = parseFloat(xMaxInput.value) || 10;
-        const yMin = parseFloat(yMinInput.value) || 0;
-        const yMax = parseFloat(yMaxInput.value) || 10;
-
-        // Linhas verticais
+        const numLines = 10;
         for (let i = 0; i <= numLines; i++) {
             const x = (canvas.width / numLines) * i;
-            ctx.moveTo(x, 0);
-            ctx.lineTo(x, canvas.height);
+            ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height);
         }
-        // Linhas horizontais
         for (let i = 0; i <= numLines; i++) {
             const y = (canvas.height / numLines) * i;
-            ctx.moveTo(0, y);
-            ctx.lineTo(canvas.width, y);
+            ctx.moveTo(0, y); ctx.lineTo(canvas.width, y);
         }
         ctx.stroke();
     }
@@ -260,14 +375,14 @@ window.onload = () => {
         ctx.fillStyle = pointsColorInput.value;
         ctx.fill();
         ctx.strokeStyle = 'black';
-        ctx.lineWidth = 2;
+        ctx.lineWidth = 1.5;
         ctx.stroke();
     }
 
     function drawCalibrationPoint(pixelPoint, label) {
         ctx.beginPath();
         ctx.arc(pixelPoint.x, pixelPoint.y, 8, 0, 2 * Math.PI);
-        ctx.fillStyle = 'rgba(255, 0, 0, 0.7)';
+        ctx.fillStyle = 'rgba(231, 76, 60, 0.8)';
         ctx.fill();
         ctx.strokeStyle = 'white';
         ctx.lineWidth = 2;
@@ -279,46 +394,26 @@ window.onload = () => {
         ctx.fillText(label, pixelPoint.x, pixelPoint.y);
     }
     
-    function drawCurve(curvePoints, color) {
-        if (curvePoints.length < 2) return;
-        ctx.beginPath();
-        ctx.moveTo(curvePoints[0].x, curvePoints[0].y);
-        for (let i = 1; i < curvePoints.length; i++) {
-            ctx.lineTo(curvePoints[i].x, curvePoints[i].y);
-        }
-        ctx.strokeStyle = color;
-        ctx.lineWidth = parseFloat(linesThicknessSlider.value);
-        ctx.stroke();
-    }
-    
     function updatePointsTable() {
         if (points.length === 0) {
             pointsTableContainer.innerHTML = "<p>Nenhum ponto adicionado.</p>";
             return;
         }
-
         let tableHTML = '<table><thead><tr><th>Ponto</th><th>X</th><th>Y</th></tr></thead><tbody>';
         points.forEach((p, index) => {
-            tableHTML += `<tr>
-                <td>${index + 1}</td>
-                <td>${p.custom.x.toFixed(4)}</td>
-                <td>${p.custom.y.toFixed(4)}</td>
-            </tr>`;
+            tableHTML += `<tr><td>${index + 1}</td><td>${p.custom.x.toFixed(4)}</td><td>${p.custom.y.toFixed(4)}</td></tr>`;
         });
         tableHTML += '</tbody></table>';
         pointsTableContainer.innerHTML = tableHTML;
     }
 
-    // --- DOWNLOADS E INTERPOLAÇÃO (Lógica de interpolação em si não muda) ---
-    // (As funções de download e getPolynomial/SplinePoints foram omitidas por brevidade,
-    // pois a lógica interna delas não muda, apenas a forma como os dados são preparados
-    // para o CSV no final)
-    
-    function downloadImage() { /* ...código anterior... */ }
-    function getPolynomialPoints(pixelPoints) { /* ...código anterior... */ }
-    function drawPolynomialInterpolation(pixelPoints) { /* ...código anterior... */ }
-    function getSplinePoints(pixelPoints) { /* ...código anterior... */ }
-    function drawCubicSplineInterpolation(pixelPoints) { /* ...código anterior... */ }
+    function downloadImage() {
+        redrawCanvas(); // Garante que a imagem baixada está atualizada
+        const link = document.createElement('a');
+        link.download = 'imagem_com_interpolacao.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    }
 
     function downloadCSV() {
         if (points.length < 2) {
@@ -326,12 +421,9 @@ window.onload = () => {
             return;
         }
 
-        const pixelPoints = points.map(p => p.pixel);
-        const polyPixelPoints = getPolynomialPoints(pixelPoints);
-        const splinePixelPoints = getSplinePoints(pixelPoints);
-
-        const polyCustomPoints = polyPixelPoints.map(pixelToCustom);
-        const splineCustomPoints = splinePixelPoints.map(pixelToCustom);
+        const customPoints = points.map(p => p.custom);
+        const polyCustomPoints = getPolynomialPoints(customPoints);
+        const splineCustomPoints = getSplinePoints(customPoints);
         
         let csvContent = "data:text/csv;charset=utf-8,";
         csvContent += "No_Ponto,X_Ponto_Custom,Y_Ponto_Custom,X_Polinomial_Custom,Y_Polinomial_Custom,X_Spline_Custom,Y_Spline_Custom\n";
@@ -341,8 +433,8 @@ window.onload = () => {
         for (let i = 0; i < maxRows; i++) {
             let row = [];
             row.push(i < points.length ? i + 1 : '');
-            row.push(i < points.length ? points[i].custom.x.toFixed(6) : '');
-            row.push(i < points.length ? points[i].custom.y.toFixed(6) : '');
+            row.push(i < points.length ? customPoints[i].x.toFixed(6) : '');
+            row.push(i < points.length ? customPoints[i].y.toFixed(6) : '');
             row.push(i < polyCustomPoints.length ? polyCustomPoints[i].x.toFixed(6) : '');
             row.push(i < polyCustomPoints.length ? polyCustomPoints[i].y.toFixed(6) : '');
             row.push(i < splineCustomPoints.length ? splineCustomPoints[i].x.toFixed(6) : '');
