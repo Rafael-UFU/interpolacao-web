@@ -1,96 +1,122 @@
+:root {
+    --bg-color: #f4f7f9;
+    --primary-text: #2c3e50;
+    --secondary-text: #34495e;
+    --accent-color: #3498db;
+    --card-bg: #ffffff;
+    --shadow: 0 4px 12px rgba(0,0,0,0.08);
+    --border-color: #e0e0e0;
+}
+
 body {
-    font-family: Arial, sans-serif;
-    background-color: #f0f0f0;
-    color: #333;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+    font-family: 'Poppins', sans-serif;
+    background-color: var(--bg-color);
+    color: var(--primary-text);
     margin: 0;
     padding: 20px;
+    display: flex; /* Adicionado para centralizar o conteúdo */
+    flex-direction: column; /* Adicionado para centralizar o conteúdo */
+    align-items: center; /* Adicionado para centralizar o conteúdo */
 }
 
-h1, h3 {
-    color: #444;
+header {
+    width: 100%;
+    max-width: 1200px; /* Largura máxima para o cabeçalho */
     text-align: center;
+    margin-bottom: 30px;
 }
 
-p {
-    text-align: center;
+h1 {
+    color: var(--primary-text);
+    font-weight: 600;
 }
 
+.subtitle {
+    color: var(--secondary-text);
+    font-size: 1.1em;
+    font-weight: 300;
+}
+
+h3 {
+    color: var(--accent-color);
+    border-bottom: 2px solid var(--border-color);
+    padding-bottom: 10px;
+    margin-top: 0;
+}
+
+/* Alteração do Layout: controles abaixo da imagem */
 .main-container {
     display: flex;
-    flex-wrap: wrap;
-    gap: 20px;
+    flex-direction: column; /* MUDANÇA PRINCIPAL: De 'row' para 'column' */
+    align-items: center;   /* Centraliza os itens no eixo cruzado */
+    gap: 30px;
     width: 100%;
-    max-width: 1400px;
+    max-width: 1200px;     /* Define uma largura máxima para o container principal */
     justify-content: center;
 }
 
 .canvas-container {
-    flex: 3; /* O canvas ocupa mais espaço */
-    min-width: 400px;
+    width: 100%; /* Ocupa a largura total do container pai */
 }
 
 .controls-container {
-    flex: 1; /* Os controles ocupam menos espaço */
-    min-width: 300px;
-    background-color: #fff;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    align-self: flex-start; /* Alinha no topo */
+    width: 100%; /* Ocupa a largura total do container pai */
+    max-width: 800px; /* Uma largura máxima para não ficar muito esticado em telas grandes */
+    background-color: var(--card-bg);
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    align-self: center; /* Garante que está centralizado */
 }
 
 .control-group {
-    margin-bottom: 20px;
+    margin-bottom: 25px;
 }
 
-.color-controls label {
-    margin-right: 5px;
-}
-
-.color-controls input[type="color"] {
-    margin-right: 15px;
+.file-input-group {
+    margin-bottom: 35px;
 }
 
 button {
-    padding: 8px 15px;
+    padding: 10px 18px;
     border: none;
-    background-color: #007bff;
+    background-color: var(--accent-color);
     color: white;
-    border-radius: 5px;
+    border-radius: 8px;
     cursor: pointer;
     margin: 5px;
-    transition: background-color 0.2s;
+    font-size: 0.9em;
+    font-weight: 400;
+    transition: all 0.3s ease;
 }
 
 button:hover {
-    background-color: #0056b3;
+    background-color: #2980b9;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 
-button.active {
-    background-color: #28a745;
-}
-
-button.active:hover {
-    background-color: #218838;
-}
-
+.toggle-btn.active { background-color: #2ecc71; }
+.toggle-btn.active:hover { background-color: #27ae60; }
+.toggle-btn { background-color: #e74c3c; }
+.toggle-btn:hover { background-color: #c0392b; }
 
 canvas {
-    border: 2px solid #ccc;
-    background-color: #fff;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    border: 2px solid var(--border-color);
+    background-color: var(--card-bg);
+    box-shadow: var(--shadow);
     cursor: crosshair;
     max-width: 100%;
     height: auto;
+    border-radius: 12px;
+    display: block; /* Garante que não haja espaçamento extra abaixo do canvas */
 }
 
 #pointsTableContainer {
     max-height: 200px;
     overflow-y: auto;
-    border: 1px solid #ccc;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
     margin-bottom: 10px;
 }
 
@@ -98,28 +124,36 @@ table {
     width: 100%;
     border-collapse: collapse;
 }
-
 th, td {
-    border: 1px solid #ddd;
-    padding: 8px;
+    padding: 10px;
     text-align: center;
+    border-bottom: 1px solid var(--border-color);
 }
-
 th {
-    background-color: #f2f2f2;
+    background-color: #f8f9fa;
+    font-weight: 600;
 }
 
 footer {
-    margin-top: 40px;
-    padding: 20px;
+    margin-top: 50px;
+    padding: 30px;
     width: 100%;
-    max-width: 1400px;
-    background-color: #333;
-    color: #fff;
+    max-width: 1200px;
     text-align: center;
-    border-radius: 8px;
+    line-height: 1.8;
+    background-color: var(--secondary-text);
+    color: #ecf0f1;
+    border-radius: 12px;
+}
+
+footer h4 {
+    margin: 0 0 20px 0;
+    font-weight: 600;
+    font-size: 1.1em;
 }
 
 footer p {
     margin: 5px 0;
+    font-weight: 300;
+    font-size: 0.95em;
 }
