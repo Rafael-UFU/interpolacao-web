@@ -15,7 +15,7 @@ window.onload = () => {
 
     // --- ESTADO DA APLICAÇÃO ---
     let backgroundImage = null;
-    let points = [];
+    let points = []; // Array para armazenar { pixel: {x, y}, normalized: {x, y} }
     let showPolynomial = true;
     let showSpline = true;
 
@@ -44,11 +44,20 @@ window.onload = () => {
             return;
         }
         const rect = canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
+        const pixelX = e.clientX - rect.left;
+        const pixelY = e.clientY - rect.top;
 
-        points.push({ x, y });
-        points.sort((a, b) => a.x - b.x); // Ordena pontos pela coordenada X
+        // 4) NORMALIZAÇÃO: Origem no canto inferior esquerdo
+        const normalizedX = pixelX / canvas.width;
+        const normalizedY = (canvas.height - pixelY) / canvas.height;
+
+        points.push({ 
+            pixel: { x: pixelX, y: pixelY }, 
+            normalized: { x: normalizedX, y: normalizedY }
+        });
+
+        // Ordena pontos pela coordenada X em pixels
+        points.sort((a, b) => a.pixel.x - b.pixel.x);
 
         redrawCanvas();
         updatePointsTable();
@@ -58,25 +67,23 @@ window.onload = () => {
     downloadImageButton.addEventListener('click', downloadImage);
     downloadCsvButton.addEventListener('click', downloadCSV);
 
-    // Eventos para alternar visibilidade
     togglePolyButton.addEventListener('click', () => {
         showPolynomial = !showPolynomial;
-        togglePolyButton.textContent = showPolynomial ? 'Ocultar Polinomial' : 'Mostrar Polinomial';
+        togglePolyButton.textContent = showPolynomial ? 'Polinomial Visível' : 'Polinomial Oculta';
         togglePolyButton.classList.toggle('active', showPolynomial);
         redrawCanvas();
     });
 
     toggleSplineButton.addEventListener('click', () => {
         showSpline = !showSpline;
-        toggleSplineButton.textContent = showSpline ? 'Ocultar Spline' : 'Mostrar Spline';
+        toggleSplineButton.textContent = showSpline ? 'Spline Visível' : 'Spline Oculta';
         toggleSplineButton.classList.toggle('active', showSpline);
         redrawCanvas();
     });
 
-    // Eventos para mudança de cor
-    polyColorInput.addEventListener('input', redrawCanvas);
-    splineColorInput.addEventListener('input', redrawCanvas);
-    pointsColorInput.addEventListener('input', redrawCanvas);
+    [polyColorInput, splineColorInput, pointsColorInput].forEach(input => {
+        input.addEventListener('input', redrawCanvas);
+    });
 
     // --- FUNÇÕES PRINCIPAIS ---
 
@@ -97,11 +104,12 @@ window.onload = () => {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         if (backgroundImage) ctx.drawImage(backgroundImage, 0, 0);
 
-        points.forEach(p => drawPoint(p));
+        points.forEach(p => drawPoint(p.pixel));
 
         if (points.length > 1) {
-            if (showPolynomial) drawPolynomialInterpolation();
-            if (showSpline) drawCubicSplineInterpolation();
+            const pixelPoints = points.map(p => p.pixel);
+            if (showPolynomial) drawPolynomialInterpolation(pixelPoints);
+            if (showSpline) drawCubicSplineInterpolation(pixelPoints);
         }
     }
     
@@ -111,9 +119,13 @@ window.onload = () => {
             return;
         }
 
-        let tableHTML = '<table><thead><tr><th>Ponto</th><th>X</th><th>Y</th></tr></thead><tbody>';
+        let tableHTML = '<table><thead><tr><th>Ponto</th><th>X (norm)</th><th>Y (norm)</th></tr></thead><tbody>';
         points.forEach((p, index) => {
-            tableHTML += `<tr><td>${index + 1}</td><td>${p.x.toFixed(2)}</td><td>${p.y.toFixed(2)}</td></tr>`;
+            tableHTML += `<tr>
+                <td>${index + 1}</td>
+                <td>${p.normalized.x.toFixed(4)}</td>
+                <td>${p.normalized.y.toFixed(4)}</td>
+            </tr>`;
         });
         tableHTML += '</tbody></table>';
         pointsTableContainer.innerHTML = tableHTML;
@@ -122,9 +134,9 @@ window.onload = () => {
 
     // --- FUNÇÕES DE DESENHO AUXILIARES ---
 
-    function drawPoint(point) {
+    function drawPoint(pixelPoint) {
         ctx.beginPath();
-        ctx.arc(point.x, point.y, POINT_RADIUS, 0, 2 * Math.PI);
+        ctx.arc(pixelPoint.x, pixelPoint.y, POINT_RADIUS, 0, 2 * Math.PI);
         ctx.fillStyle = pointsColorInput.value;
         ctx.fill();
         ctx.strokeStyle = 'black';
@@ -133,34 +145,35 @@ window.onload = () => {
     }
 
     function drawCurve(curvePoints, color) {
+        if (curvePoints.length < 2) return;
         ctx.beginPath();
         ctx.moveTo(curvePoints[0].x, curvePoints[0].y);
         for (let i = 1; i < curvePoints.length; i++) {
             ctx.lineTo(curvePoints[i].x, curvePoints[i].y);
         }
         ctx.strokeStyle = color;
-        ctx.lineWidth = 3;
+        ctx.lineWidth: 3;
         ctx.stroke();
     }
     
-    // --- LÓGICA DE INTERPOLAÇÃO E DADOS (sem alterações na matemática, apenas na chamada) ---
+    // --- LÓGICA DE INTERPOLAÇÃO E DADOS ---
 
-    function getPolynomialPoints() {
-        const n = points.length;
+    function getPolynomialPoints(pixelPoints) {
+        const n = pixelPoints.length;
         if (n < 2) return [];
 
         const A = [], b = [];
         for (let i = 0; i < n; i++) {
             const row = [];
-            for (let j = 0; j < n; j++) row.push(Math.pow(points[i].x, j));
+            for (let j = 0; j < n; j++) row.push(Math.pow(pixelPoints[i].x, j));
             A.push(row);
-            b.push(points[i].y);
+            b.push(pixelPoints[i].y);
         }
         
         try {
             const coeffs = math.lusolve(A, b).map(val => val[0]);
             const curvePoints = [];
-            for (let x = points[0].x; x <= points[n - 1].x; x++) {
+            for (let x = pixelPoints[0].x; x <= pixelPoints[n - 1].x; x++) {
                 let y = 0;
                 for (let i = 0; i < n; i++) y += coeffs[i] * Math.pow(x, i);
                 curvePoints.push({ x, y });
@@ -172,17 +185,17 @@ window.onload = () => {
         }
     }
 
-    function drawPolynomialInterpolation() {
-        const polyPoints = getPolynomialPoints();
+    function drawPolynomialInterpolation(pixelPoints) {
+        const polyPoints = getPolynomialPoints(pixelPoints);
         if(polyPoints.length > 0) drawCurve(polyPoints, polyColorInput.value);
     }
 
-    function getSplinePoints() {
-        const n = points.length;
+    function getSplinePoints(pixelPoints) {
+        const n = pixelPoints.length;
         if (n < 2) return [];
-        if (n === 2) return [...points];
+        if (n === 2) return [...pixelPoints];
         
-        const x = points.map(p => p.x), y = points.map(p => p.y);
+        const x = pixelPoints.map(p => p.x), y = pixelPoints.map(p => p.y);
         const h = []; for (let i = 0; i < n - 1; i++) h[i] = x[i + 1] - x[i];
         const alpha = []; for (let i = 1; i < n - 1; i++) alpha[i] = (3 / h[i]) * (y[i + 1] - y[i]) - (3 / h[i - 1]) * (y[i] - y[i - 1]);
         const l = [1], mu = [0], z = [0];
@@ -207,12 +220,12 @@ window.onload = () => {
                 curvePoints.push({ x: xi, y: yi });
             }
         }
-        curvePoints.push(points[n - 1]);
+        curvePoints.push(pixelPoints[n - 1]);
         return curvePoints;
     }
 
-    function drawCubicSplineInterpolation() {
-        const splinePoints = getSplinePoints();
+    function drawCubicSplineInterpolation(pixelPoints) {
+        const splinePoints = getSplinePoints(pixelPoints);
         if(splinePoints.length > 0) drawCurve(splinePoints, splineColorInput.value);
     }
     
@@ -222,26 +235,36 @@ window.onload = () => {
             return;
         }
 
-        const polyPoints = getPolynomialPoints();
-        const splinePoints = getSplinePoints();
+        const pixelPoints = points.map(p => p.pixel);
+        const polyPixelPoints = getPolynomialPoints(pixelPoints);
+        const splinePixelPoints = getSplinePoints(pixelPoints);
+
+        // Função auxiliar para normalizar os pontos da curva calculados em pixels
+        const normalizePixelPoint = (p) => ({
+            x: p.x / canvas.width,
+            y: (canvas.height - p.y) / canvas.height
+        });
+
+        const polyNormPoints = polyPixelPoints.map(normalizePixelPoint);
+        const splineNormPoints = splinePixelPoints.map(normalizePixelPoint);
         
         let csvContent = "data:text/csv;charset=utf-8,";
-        csvContent += "No_Ponto,X_Ponto,Y_Ponto,X_Polinomial,Y_Polinomial,X_Spline,Y_Spline\n";
+        csvContent += "No_Ponto,X_Ponto_Norm,Y_Ponto_Norm,X_Polinomial_Norm,Y_Polinomial_Norm,X_Spline_Norm,Y_Spline_Norm\n";
 
-        const maxRows = Math.max(points.length, polyPoints.length, splinePoints.length);
+        const maxRows = Math.max(points.length, polyNormPoints.length, splineNormPoints.length);
 
         for (let i = 0; i < maxRows; i++) {
             let row = [];
-            // Nós
+            // Nós normalizados
             row.push(i < points.length ? i + 1 : '');
-            row.push(i < points.length ? points[i].x.toFixed(4) : '');
-            row.push(i < points.length ? points[i].y.toFixed(4) : '');
-            // Polinomial
-            row.push(i < polyPoints.length ? polyPoints[i].x.toFixed(4) : '');
-            row.push(i < polyPoints.length ? polyPoints[i].y.toFixed(4) : '');
-            // Spline
-            row.push(i < splinePoints.length ? splinePoints[i].x.toFixed(4) : '');
-            row.push(i < splinePoints.length ? splinePoints[i].y.toFixed(4) : '');
+            row.push(i < points.length ? points[i].normalized.x.toFixed(6) : '');
+            row.push(i < points.length ? points[i].normalized.y.toFixed(6) : '');
+            // Polinomial normalizado
+            row.push(i < polyNormPoints.length ? polyNormPoints[i].x.toFixed(6) : '');
+            row.push(i < polyNormPoints.length ? polyNormPoints[i].y.toFixed(6) : '');
+            // Spline normalizado
+            row.push(i < splineNormPoints.length ? splineNormPoints[i].x.toFixed(6) : '');
+            row.push(i < splineNormPoints.length ? splineNormPoints[i].y.toFixed(6) : '');
             
             csvContent += row.join(",") + "\n";
         }
@@ -249,7 +272,7 @@ window.onload = () => {
         const encodedUri = encodeURI(csvContent);
         const link = document.createElement("a");
         link.setAttribute("href", encodedUri);
-        link.setAttribute("download", "dados_interpolacao.csv");
+        link.setAttribute("download", "dados_interpolacao_normalizados.csv");
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
