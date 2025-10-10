@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visualizador de Interpolação Polinomial</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Visualizador de Interpolação Polinomial</h1>
+    <p>Faça o upload de uma imagem e clique nela para adicionar pontos (nós de interpolação).</p>
+    
+    <div class="controls">
+        <label for="imageLoader">Selecione uma imagem:</label>
+        <input type="file" id="imageLoader" name="imageLoader" accept="image/*">
+        <button id="resetButton">Limpar Pontos</button>
+    </div>
+
+    <canvas id="imageCanvas"></canvas>
+
+    <div class="legend">
+        <span class="legend-item"><span class="color-box" style="background-color: #ff0000;"></span> Interpolação Polinomial Padrão</span>
+        <span class="legend-item"><span class="color-box" style="background-color: #0000ff;"></span> Spline Cúbica</span>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.7.0/math.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
