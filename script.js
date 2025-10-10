@@ -66,9 +66,10 @@ window.onload = () => {
     canvas.addEventListener('click', handleCanvasClick);
     calibrationOverlay.addEventListener('click', handleCanvasClick);
 
+    // Adiciona listeners para todos os inputs que devem redesenhar o canvas
     [pointsSizeSlider, linesThicknessSlider, polyColorInput, splineColorInput, pointsColorInput,
      gridColorInput, gridThicknessSlider, xMinInput, xMaxInput, yMinInput, yMaxInput].forEach(input => {
-        if (input) { // Checagem de segurança
+        if (input) {
             input.addEventListener('input', () => {
                 recalculateAllCustomCoords();
                 redrawCanvas();
@@ -76,11 +77,44 @@ window.onload = () => {
         }
     });
 
-    // ... (Todos os outros addEventListeners como toggleButtons, resetButton, etc.)
+    // ###############################################################
+    // ### INÍCIO DA CORREÇÃO: LISTENERS DOS BOTÕES RESTAURADOS ###
+    // ###############################################################
 
-    // --- LÓGICA DE COORDENADAS E CALIBRAÇÃO (Sem alterações) ---
+    resetButton.addEventListener('click', reset);
+    downloadImageButton.addEventListener('click', downloadImage);
+    downloadCsvButton.addEventListener('click', downloadCSV);
 
-    // --- FUNÇÕES PRINCIPAIS E DE DESENHO ---
+    togglePolyButton.addEventListener('click', () => {
+        showPolynomial = !showPolynomial;
+        togglePolyButton.textContent = showPolynomial ? 'Polinomial Visível' : 'Polinomial Oculta';
+        togglePolyButton.classList.toggle('active', showPolynomial);
+        redrawCanvas();
+    });
+
+    toggleSplineButton.addEventListener('click', () => {
+        showSpline = !showSpline;
+        toggleSplineButton.textContent = showSpline ? 'Spline Visível' : 'Spline Oculta';
+        toggleSplineButton.classList.toggle('active', showSpline);
+        redrawCanvas();
+    });
+
+    toggleGridButton.addEventListener('click', () => {
+        showGrid = !showGrid;
+        toggleGridButton.textContent = showGrid ? 'Grade Visível' : 'Grade Oculta';
+        toggleGridButton.classList.toggle('active', showGrid);
+        redrawCanvas();
+    });
+
+    coordModeButton.addEventListener('click', toggleCoordMode);
+
+    // ###############################################################
+    // ### FIM DA CORREÇÃO ###
+    // ###############################################################
+
+
+    // --- FUNÇÕES ---
+    // O restante das funções permanece o mesmo
 
     function reset() {
         points = [];
@@ -106,7 +140,6 @@ window.onload = () => {
 
         const customPoints = points.map(p => p.custom);
         if (customPoints.length > 1) {
-            // Limpa os coeficientes antes de recalcular
             polynomialCoefficients = [];
             if (showPolynomial) drawPolynomialInterpolation(customPoints);
             if (showSpline) drawCubicSplineInterpolation(customPoints);
@@ -118,47 +151,33 @@ window.onload = () => {
         updatePolynomialDisplay();
     }
     
-    // ATUALIZADO com trava de segurança
     function updatePolynomialDisplay() {
-        // ### TRAVA DE SEGURANÇA ADICIONADA AQUI ###
-        // Se o elemento HTML não existir, a função para e não quebra o script.
         if (!polynomialEquationContainer) return;
-
         if (polynomialCoefficients.length < 1) {
             polynomialEquationContainer.innerHTML = "<p>Adicione 2 ou mais pontos para ver a equação.</p>";
             return;
         }
-
         let equation = "P(x) = ";
         let firstTerm = true;
-
         for (let i = polynomialCoefficients.length - 1; i >= 0; i--) {
             const coeff = polynomialCoefficients[i];
             if (Math.abs(coeff) < 1e-9) continue;
-
             const sign = coeff < 0 ? " - " : (firstTerm ? "" : " + ");
             const absCoeff = Math.abs(coeff);
-            let coeffStr = absCoeff.toFixed(3); // Aumentei a precisão para 3 casas decimais
-            
+            let coeffStr = absCoeff.toFixed(3);
             if (Math.abs(absCoeff - 1) < 1e-9 && i > 0) {
                 coeffStr = "";
             }
-
             let term = "";
             if (i > 1) term = `${coeffStr}x^${i}`;
             else if (i === 1) term = `${coeffStr}x`;
             else term = coeffStr;
-
             equation += `${sign}${term}`;
             firstTerm = false;
         }
-
         if (firstTerm) equation = "P(x) = 0";
         polynomialEquationContainer.innerHTML = `<p>${equation}</p>`;
     }
-
-    // --- COLEI TODAS AS OUTRAS FUNÇÕES AQUI PARA GARANTIR QUE NADA FALTE ---
-    // (Incluindo as que foram corrigidas na resposta anterior)
 
     function toggleCoordMode() {
         if (coordMode === 'manual') {
@@ -435,9 +454,12 @@ window.onload = () => {
     }
 
     function downloadCSV() {
-        if (points.length < 2) return;
+        if (points.length < 2) {
+            alert("Adicione pelo menos 2 pontos para gerar os dados.");
+            return;
+        }
         const customPoints = points.map(p => p.custom);
-        getPolynomialPointsAndCoeffs(customPoints); // Ensure coeffs are calculated
+        getPolynomialPointsAndCoeffs(customPoints);
         const polyCustomPoints = getCurvePointsFromCoeffs(customPoints);
         const splineCustomPoints = getSplinePoints(customPoints);
         let csvContent = "data:text/csv;charset=utf-8,";
@@ -462,11 +484,4 @@ window.onload = () => {
         link.click();
         document.body.removeChild(link);
     }
-    
-    // Associa eventos aos botões de toggle
-    [togglePolyButton, toggleSplineButton].forEach(button => {
-        if(button) button.addEventListener('click', () => {
-             // A lógica já está em addEventListeners individuais, mas checar se existem
-        });
-    });
 };
