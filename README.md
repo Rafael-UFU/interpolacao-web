@@ -18,7 +18,7 @@ Uma aplicação web interativa desenvolvida como parte de um projeto de mestrado
 
 A aplicação está hospedada no GitHub Pages e pode ser acessada publicamente através do link abaixo:
 
-**[https://seu-usuario.github.io/seu-repositorio/](https://rafael-ufu.github.io/interpolacao-web/)**
+**[https://rafael-ufu.github.io/interpolacao-web/](https://rafael-ufu.github.io/interpolacao-web/)**
 
 ---
 
