@@ -20,9 +20,6 @@ A aplicação está hospedada no GitHub Pages e pode ser acessada publicamente a
 
 **[https://rafael-ufu.github.io/interpolacao-web/](https://rafael-ufu.github.io/interpolacao-web/)**
 
----
-
-![Contador de Visualizações](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Frafael-ufu.github.io%2Finterpolacao-web%2F&count_bg=%233498DB&title_bg=%232C3E50&title=VISUALIZA%C3%87%C3%95ES&edge_flat=false)
 
 ---
 
